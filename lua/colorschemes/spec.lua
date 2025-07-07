@@ -32,8 +32,15 @@ M.check_colorscheme_specs = function(specs)
 	if type(specs) ~= "table" then
 		error("Colorscheme specs must be a table")
 	end
+	local map = {}
 	for _, spec in ipairs(specs) do
 		check_colorscheme_spec(spec)
+		for _, name in ipairs(spec.colorschemes) do
+			if map[name] then
+				error("Duplicate colorscheme name: " .. name)
+			end
+			map[name] = true
+		end
 	end
 end
 
