@@ -102,10 +102,15 @@ local create_user_commands = function()
 		M.switch_to(colorscheme)
 	end, {
 		nargs = 1,
-		complete = function(_, cmd_line)
-			local params = vim.split(cmd_line, "%s+", { trimempty = true })
-			if #params == 1 then
-				return M.get_colorscheme_names()
+		complete = function(_, args)
+			local parts = vim.split(args, "%s+", { trimempty = true })
+			if args:sub(-1) == " " then
+				parts[#parts + 1] = ""
+			end
+			if #parts < 3 then
+				return vim.tbl_filter(function(key)
+					return key:find(parts[2], 1, true) == 1
+				end, M.get_colorscheme_names())
 			end
 		end,
 	})
