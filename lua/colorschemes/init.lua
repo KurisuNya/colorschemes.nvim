@@ -5,18 +5,11 @@ local M = {}
 local default_config = {
 	default_colorscheme = false, ---@type string|boolean
 	create_commands = false, ---@type boolean
-	notice = true, ---@type boolean
 }
 
 M.config = default_config
 
 local current = nil
-
-local Info = function(msg, title)
-	if M.config.notice then
-		vim.notify(msg, vim.log.levels.INFO, { title = title or "Colorscheme Info" })
-	end
-end
 
 local Error = function(msg, title)
 	vim.notify(msg, vim.log.levels.ERROR, { title = title or "Colorscheme Error" })
@@ -25,16 +18,6 @@ end
 local get_colorscheme_map = function()
 	local specs = vim.g.colorscheme_specs or {}
 	Spec.check_colorscheme_specs(specs)
-	local wrapper = function(func, action)
-		return function(name)
-			local ok, err = pcall(func, name)
-			if ok then
-				return true
-			end
-			Error("Failed to " .. action .. " colorscheme '" .. name .. "': " .. err)
-			return false
-		end
-	end
 
 	local colorscheme_map = {}
 	for _, spec in ipairs(specs) do
@@ -44,8 +27,8 @@ local get_colorscheme_map = function()
 				error("Duplicate colorscheme name: " .. name)
 			end
 			colorscheme_map[name] = {
-				activate = wrapper(spec.activate, "activate"),
-				deactivate = wrapper(spec.deactivate, "deactivate"),
+				activate = spec.activate,
+				deactivate = spec.deactivate,
 			}
 		end
 	end
@@ -70,35 +53,31 @@ M.switch_to = function(name)
 		return
 	end
 	if current == name then
-		Info("Already using colorscheme '" .. name .. "'")
 		return
 	end
 	if current then
-		if not map[current].deactivate(current) then
+		local ok, err = pcall(map[current].deactivate, current)
+		if not ok then
+			Error("Failed to deactivate colorscheme '" .. current .. "': " .. err)
 			return
 		end
 	end
-	if not map[name].activate(name) then
+	local ok, err = pcall(map[name].activate, name)
+	if not ok then
+		Error("Failed to activate colorscheme '" .. name .. "': " .. err)
 		return
 	end
-	local msg = "Switched from '" .. (current or "none") .. "' to '" .. name .. "'"
-	Info(msg, "Colorscheme Switched")
 	current = name
 end
 
-M.setup = function(config)
-	M.config = vim.tbl_deep_extend("force", default_config, config or {})
-	if M.config.default_colorscheme then
-		M.switch_to(M.config.default_colorscheme)
-	end
-
-	if not M.config.create_commands then
-		return
-	end
-
+local create_user_commands = function()
 	vim.api.nvim_create_user_command("ColorschemeList", function()
 		local names = M.get_colorscheme_names()
-		Info("Available colorschemes: " .. table.concat(names, ", "), "Colorscheme List")
+		vim.notify(
+			"Available colorschemes: " .. table.concat(names, ", "),
+			vim.log.levels.INFO,
+			{ title = "Colorscheme List" }
+		)
 	end, { nargs = 0 })
 
 	vim.api.nvim_create_user_command("ColorschemeSwitch", function(opts)
@@ -113,6 +92,16 @@ M.setup = function(config)
 			end
 		end,
 	})
+end
+
+M.setup = function(config)
+	M.config = vim.tbl_deep_extend("force", default_config, config or {})
+	if M.config.default_colorscheme then
+		M.switch_to(M.config.default_colorscheme)
+	end
+	if M.config.create_commands then
+		create_user_commands()
+	end
 end
 
 return M
