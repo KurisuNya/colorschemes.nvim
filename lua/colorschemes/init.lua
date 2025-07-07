@@ -70,7 +70,24 @@ M.switch_to = function(name)
 	current = name
 end
 
+M.get_current = function()
+	return current and current or "none"
+end
+
+M.switch_to_default = function()
+	if M.config.default_colorscheme then
+		M.switch_to(M.config.default_colorscheme)
+	else
+		Error("No default colorscheme set.")
+	end
+end
+
 local create_user_commands = function()
+	vim.api.nvim_create_user_command("ColorschemeCurrent", function()
+		local msg = "Current colorscheme: " .. M.get_current()
+		vim.notify(msg, vim.log.levels.INFO, { title = "Current Colorscheme" })
+	end, { nargs = 0 })
+
 	vim.api.nvim_create_user_command("ColorschemeList", function()
 		local names = M.get_colorscheme_names()
 		vim.notify(
@@ -92,6 +109,10 @@ local create_user_commands = function()
 			end
 		end,
 	})
+
+	vim.api.nvim_create_user_command("ColorschemeSwitchDefault", function()
+		M.switch_to_default()
+	end, { nargs = 0 })
 end
 
 M.setup = function(config)
