@@ -1,4 +1,4 @@
-local Spec = require("colorschemes.spec")
+local spec_module = require("colorschemes.spec")
 
 local M = {}
 
@@ -6,6 +6,7 @@ local M = {}
 M.config = {
 	default_colorscheme = false, ---@type string|boolean
 	create_commands = false, ---@type boolean
+	specs = {}, ---@type Spec
 }
 
 local current = nil
@@ -55,12 +56,11 @@ M.switch_to_default = function()
 	end
 end
 
-local get_colorscheme_map = function()
-	local specs = vim.g.colorscheme_specs or {}
-	Spec.check_colorscheme_specs(specs)
+local get_colorscheme_map = function(specs)
+	spec_module.check_colorscheme_specs(specs)
 	local map = {}
 	for _, spec in ipairs(specs) do
-		spec = vim.tbl_deep_extend("force", Spec.default_spec, spec)
+		spec = vim.tbl_deep_extend("force", spec_module.default_spec, spec)
 		for _, name in ipairs(spec.colorschemes) do
 			map[name] = {
 				activate = function()
@@ -106,7 +106,7 @@ end
 ---@param config colorschemes.Config
 M.setup = function(config)
 	M.config = vim.tbl_deep_extend("force", M.config, config or {})
-	colorscheme_map = get_colorscheme_map()
+	colorscheme_map = get_colorscheme_map(M.config.specs)
 	colorscheme_names = vim.tbl_keys(colorscheme_map)
 	table.sort(colorscheme_names)
 

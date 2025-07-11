@@ -1,5 +1,11 @@
 local M = {}
 
+---@class Spec
+---@param colorschemes string[] List of colorscheme names
+---@param activate? fun(name: string) Function to activate the colorscheme
+---@param deactivate? fun(name: string) Function to deactivate the colorscheme
+
+---@type Spec
 M.default_spec = {
 	colorschemes = {}, ---@type string[]
 	activate = function(name)
